@@ -94,7 +94,7 @@ public class WalletApplication extends Application {
     public void onCreate() {
         new LinuxSecureRandom(); // init proper random number generator
 
-        initLogging();
+        Logging.init(getFilesDir());
 
         StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().detectAll().permitDiskReads()
                 .permitDiskWrites().penaltyLog().build());
@@ -155,57 +155,6 @@ public class WalletApplication extends Application {
         // make sure there is at least one recent backup
         if (!getFileStreamPath(Constants.Files.WALLET_KEY_BACKUP_PROTOBUF).exists())
             backupWallet();
-    }
-
-    private void initLogging() {
-        // create log dir
-        final File logDir = new File(getFilesDir(), "log");
-        logDir.mkdir();
-
-        final File logFile = new File(logDir, "wallet.log");
-
-        final LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-
-        final PatternLayoutEncoder filePattern = new PatternLayoutEncoder();
-        filePattern.setContext(context);
-        filePattern.setPattern("%d{HH:mm:ss,UTC} [%thread] %logger{0} - %msg%n");
-        filePattern.start();
-
-        final RollingFileAppender<ILoggingEvent> fileAppender = new RollingFileAppender<ILoggingEvent>();
-        fileAppender.setContext(context);
-        fileAppender.setFile(logFile.getAbsolutePath());
-
-        final TimeBasedRollingPolicy<ILoggingEvent> rollingPolicy = new TimeBasedRollingPolicy<ILoggingEvent>();
-        rollingPolicy.setContext(context);
-        rollingPolicy.setParent(fileAppender);
-        rollingPolicy.setFileNamePattern(logDir.getAbsolutePath() + "/wallet.%d{yyyy-MM-dd,UTC}.log.gz");
-        rollingPolicy.setMaxHistory(7);
-        rollingPolicy.start();
-
-        fileAppender.setEncoder(filePattern);
-        fileAppender.setRollingPolicy(rollingPolicy);
-        fileAppender.start();
-
-        final PatternLayoutEncoder logcatTagPattern = new PatternLayoutEncoder();
-        logcatTagPattern.setContext(context);
-        logcatTagPattern.setPattern("%logger{0}");
-        logcatTagPattern.start();
-
-        final PatternLayoutEncoder logcatPattern = new PatternLayoutEncoder();
-        logcatPattern.setContext(context);
-        logcatPattern.setPattern("[%thread] %msg%n");
-        logcatPattern.start();
-
-        final LogcatAppender logcatAppender = new LogcatAppender();
-        logcatAppender.setContext(context);
-        logcatAppender.setTagEncoder(logcatTagPattern);
-        logcatAppender.setEncoder(logcatPattern);
-        logcatAppender.start();
-
-        final ch.qos.logback.classic.Logger log = context.getLogger(Logger.ROOT_LOGGER_NAME);
-        log.addAppender(fileAppender);
-        log.addAppender(logcatAppender);
-        log.setLevel(Level.INFO);
     }
 
     private static final String BIP39_WORDLIST_FILENAME = "bip39-wordlist.txt";
